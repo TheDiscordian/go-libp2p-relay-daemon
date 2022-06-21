@@ -1,19 +1,28 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
+	"crypto/tls"
 
 	"github.com/libp2p/go-libp2p"
 	relaydaemon "github.com/libp2p/go-libp2p-relay-daemon"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	relayv1 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv1/relay"
 	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
+
+	connmgr "github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
+
+	ws "github.com/libp2p/go-libp2p/p2p/transport/websocket"
+
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -73,6 +82,22 @@ func main() {
 		panic(err)
 	}
 
+	/* TLS */
+
+	certs := make([]tls.Certificate, len(cfg.TLS.KeyPairPaths))
+	for i, keyPairPaths := range(cfg.TLS.KeyPairPaths) {
+		certs[i], err = tls.LoadX509KeyPair(keyPairPaths[0], keyPairPaths[1])
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	opts = append(opts,
+		libp2p.Transport(ws.New, ws.WithTLSConfig(&tls.Config{Certificates: certs})),
+	)
+
+	/* End of TLS */
+
 	opts = append(opts,
 		libp2p.ConnectionManager(cm),
 	)
@@ -83,7 +108,7 @@ func main() {
 	}
 
 	fmt.Printf("I am %s\n", host.ID())
-	fmt.Printf("Public Addresses:\n")
+	fmt.Println("Public Addresses:")
 	for _, addr := range host.Addrs() {
 		fmt.Printf("\t%s/p2p/%s\n", addr, host.ID())
 	}
@@ -97,7 +122,7 @@ func main() {
 	}
 
 	if cfg.RelayV1.Enabled {
-		fmt.Printf("Starting RelayV1...\n")
+		fmt.Println("Starting RelayV1...")
 
 		_, err = relayv1.NewRelay(host,
 			relayv1.WithResources(cfg.RelayV1.Resources),
@@ -105,11 +130,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("RelayV1 is running!\n")
+		fmt.Println("RelayV1 is running!")
 	}
 
 	if cfg.RelayV2.Enabled {
-		fmt.Printf("Starting RelayV2...\n")
+		fmt.Println("Starting RelayV2...")
 		_, err = relayv2.New(host,
 			relayv2.WithResources(cfg.RelayV2.Resources),
 			relayv2.WithACL(acl))
@@ -118,6 +143,56 @@ func main() {
 		}
 		fmt.Printf("RelayV2 is running!\n")
 	}
+
+	/* PubSub */
+
+	gs, err := pubsub.NewGossipSub(context.TODO(), host)
+	if err != nil {
+		panic(err)
+	}
+	announceCircuit, err := gs.Join("announce-circuit")
+	if err != nil {
+		panic(err)
+	}
+	sub, err := announceCircuit.Subscribe()
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		var err error
+		var msg *pubsub.Message
+		for err == nil {
+			msg, err = sub.Next(context.TODO())
+			fmt.Println("[DEBUG]", string(msg.GetData()))
+		}
+		panic(err)
+	}()
+
+	go func() {
+		for true {
+			ps := host.Peerstore()
+			//peerAddrs := ps.PeersWithAddrs()
+			peerAddrs := ps.Peers()
+			for _, peer := range peerAddrs {
+				if peer == host.ID() {
+					continue
+				}
+				fmt.Println("[DEBUG]", peer)
+				addrs := ps.Addrs(peer)
+				for _, addr := range addrs {
+					protocols := addr.Protocols()
+					for _, protocol := range protocols {
+						if protocol.Code == 477 { // ws
+							fmt.Println(peer)
+						}
+					}
+				}
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
+	/* End of PubSub */
 
 	select {}
 }
