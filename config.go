@@ -72,7 +72,7 @@ func DefaultConfig() Config {
 		Network: NetworkConfig{
 			ListenAddrs: []string{
 				"/ip4/0.0.0.0/tcp/4011/ws",
-            	"/ip6/::/tcp/4011/ws",
+				"/ip6/::/tcp/4011/ws",
 			},
 		},
 		ConnMgr: ConnMgrConfig{

@@ -2,19 +2,18 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
-	"crypto/tls"
 
 	"github.com/libp2p/go-libp2p"
 	relaydaemon "github.com/libp2p/go-libp2p-relay-daemon"
-	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	relayv1 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv1/relay"
 	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	connmgr "github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	ma "github.com/multiformats/go-multiaddr"
@@ -85,7 +84,7 @@ func main() {
 	/* TLS */
 
 	certs := make([]tls.Certificate, len(cfg.TLS.KeyPairPaths))
-	for i, keyPairPaths := range(cfg.TLS.KeyPairPaths) {
+	for i, keyPairPaths := range cfg.TLS.KeyPairPaths {
 		certs[i], err = tls.LoadX509KeyPair(keyPairPaths[0], keyPairPaths[1])
 		if err != nil {
 			panic(err)
