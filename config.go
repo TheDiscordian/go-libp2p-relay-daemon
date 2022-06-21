@@ -18,6 +18,7 @@ type Config struct {
 	RelayV2 RelayV2Config
 	ACL     ACLConfig
 	Daemon  DaemonConfig
+	TLS     TLSConfig
 }
 
 // DaemonConfig controls settings for the relay-daemon itself.
@@ -61,33 +62,36 @@ type ACLConfig struct {
 	AllowSubnets []string
 }
 
+type TLSConfig struct {
+	// [][certPath, keyPath]
+	KeyPairPaths [][2]string
+}
+
 // DefaultConfig returns a default relay configuration using default resource
 // settings and no ACLs.
 func DefaultConfig() Config {
 	return Config{
 		Network: NetworkConfig{
 			ListenAddrs: []string{
-				"/ip4/0.0.0.0/udp/4001/quic",
-				"/ip6/::/udp/4001/quic",
-				"/ip4/0.0.0.0/tcp/4001",
-				"/ip6/::/tcp/4001",
+				"/ip4/0.0.0.0/tcp/4011/ws",
+            	"/ip6/::/tcp/4011/ws",
 			},
 		},
 		ConnMgr: ConnMgrConfig{
-			ConnMgrLo:    512,
-			ConnMgrHi:    768,
+			ConnMgrLo:    96,
+			ConnMgrHi:    512,
 			ConnMgrGrace: 2 * time.Minute,
 		},
 		RelayV1: RelayV1Config{
-			Enabled:   false,
+			Enabled:   true,
 			Resources: relayv1.DefaultResources(),
 		},
 		RelayV2: RelayV2Config{
-			Enabled:   true,
+			Enabled:   false,
 			Resources: relayv2.DefaultResources(),
 		},
 		Daemon: DaemonConfig{
-			PprofPort: 6060,
+			PprofPort: -1,
 		},
 	}
 }
