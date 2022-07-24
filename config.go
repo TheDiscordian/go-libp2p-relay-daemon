@@ -67,6 +67,8 @@ type TLSConfig struct {
 	KeyPairPaths [][2]string
 }
 
+// DefaultConfig returns a default relay configuration using default resource
+// settings and no ACLs.
 func DefaultConfig() Config {
 	return Config{
 		Network: NetworkConfig{

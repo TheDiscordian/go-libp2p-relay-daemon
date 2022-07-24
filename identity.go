@@ -2,9 +2,10 @@ package relaydaemon
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
 // LoadIdentity reads a private key from the given path and, if it does not
@@ -22,7 +23,7 @@ func LoadIdentity(idPath string) (crypto.PrivKey, error) {
 
 // ReadIdentity reads a private key from the given path.
 func ReadIdentity(path string) (crypto.PrivKey, error) {
-	bytes, err := os.ReadFile(path)
+	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +43,7 @@ func GenerateIdentity(path string) (crypto.PrivKey, error) {
 		return nil, err
 	}
 
-	err = os.WriteFile(path, bytes, 0400)
+	err = ioutil.WriteFile(path, bytes, 0400)
 
 	return privk, err
 }
