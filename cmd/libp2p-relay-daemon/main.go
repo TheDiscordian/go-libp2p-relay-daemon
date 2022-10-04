@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p"
-	relaydaemon "github.com/libp2p/go-libp2p-relay-daemon"
+	relaydaemon "github.com/TheDiscordian/go-libp2p-relay-daemon"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	relayv1 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv1/relay"
